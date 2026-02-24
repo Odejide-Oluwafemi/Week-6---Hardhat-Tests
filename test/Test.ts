@@ -40,15 +40,17 @@ describe("SaveEther", function() {
       expect(await contract.connect(otherAccount).checkUserEthBalanceInContract()).to.equal(depositAmount);
     });
 
-    // it("Should withdraw ETH by user", async function {
-    //   const { contract, otherAccount } = await loadFixture(deployContracts);
+    it("Should withdraw ETH by user", async function() {
+      const { contract, otherAccount } = await loadFixture(deployContracts);
       
-    //   // Deposit
-    //   const depositAmount = ethers.parseEther("1");
-    //   await contract.connect(otherAccount).depositEth({ value: depositAmount });
+      // Deposit
+      const depositAmount = ethers.parseEther("1");
+      await contract.connect(otherAccount).depositEth({ value: depositAmount });
       
-    //   // Withdraw
-    //   await contract.
-    // });
+      // Withdraw
+      await contract.connect(otherAccount).withdrawEth();
+      expect(await ethers.provider.getBalance(contract)).to.equal(0);
+      expect(await contract.connect(otherAccount).checkUserEthBalanceInContract()).to.equal(0);
+    });
   });
 });
