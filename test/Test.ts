@@ -52,5 +52,20 @@ describe("SaveEther", function() {
       expect(await ethers.provider.getBalance(contract)).to.equal(0);
       expect(await contract.connect(otherAccount).checkUserEthBalanceInContract()).to.equal(0);
     });
+
+    it("Should deposit token by User", async function() {
+      const { contract, token, otherAccount } = await loadFixture(deployContracts);
+
+      // User buys token firstly from the token contract
+      const ethPaid = ethers.parseEther("1");
+      await token.connect(otherAccount).buyToken({ value: ethPaid});
+
+      // Ensure User token balance is correctly updated
+      const tokenQuantityBought = await token.getTokenQuantityForEth(ethPaid);
+      const userTokenBalance = await token.connect(otherAccount).balanceOf(otherAccount.address);
+      expect(userTokenBalance).to.equal(tokenQuantityBought);
+
+      //
+    });
   });
 });
