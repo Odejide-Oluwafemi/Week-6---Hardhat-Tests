@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 
 describe("SaveEther", function() {
   async function deployContracts() {
@@ -25,6 +25,15 @@ describe("SaveEther", function() {
       const { contract, token } = await loadFixture(deployContracts);
 
       expect(await contract.getTokenAddress()).to.be.equals(await token.getAddress());
+    });
+
+    it("Should deposit ETH by user", async function() {
+      const { contract, otherAccount } = await loadFixture(deployContracts);
+      
+      const depositAmount = ethers.parseEther("1");
+      await contract.connect(otherAccount).depositEth({ value: depositAmount });
+
+      expect(await ethers.provider.getBalance(contract)).to.equal(depositAmount);
     });
   });
 });
