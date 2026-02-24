@@ -33,7 +33,22 @@ describe("SaveEther", function() {
       const depositAmount = ethers.parseEther("1");
       await contract.connect(otherAccount).depositEth({ value: depositAmount });
 
+      // Ensure Contract now has {depositAmount} balance
       expect(await ethers.provider.getBalance(contract)).to.equal(depositAmount);
+
+      // Ensure that the User ETH balance in our contract record is correct as well
+      expect(await contract.connect(otherAccount).checkUserEthBalanceInContract()).to.equal(depositAmount);
     });
+
+    // it("Should withdraw ETH by user", async function {
+    //   const { contract, otherAccount } = await loadFixture(deployContracts);
+      
+    //   // Deposit
+    //   const depositAmount = ethers.parseEther("1");
+    //   await contract.connect(otherAccount).depositEth({ value: depositAmount });
+      
+    //   // Withdraw
+    //   await contract.
+    // });
   });
 });
