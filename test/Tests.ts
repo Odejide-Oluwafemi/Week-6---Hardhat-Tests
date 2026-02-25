@@ -9,17 +9,20 @@ describe("All Tests", function () {
     const MyERC20 = await hre.ethers.getContractFactory("MyERC20");
     const SaveToken = await hre.ethers.getContractFactory("SaveToken");
     const SchoolManagementSystem = await hre.ethers.getContractFactory("SchoolManagementSystem");
+    const PropertyManagementSystem = await hre.ethers.getContractFactory("PropertyManagement");
 
     const NAME = "My Token";
     const SYMBOL = "MTK";
     const DECIMALS = 18;
     const TOTAL_SUPPLY = 100000000000000000000000000n;
 
+    // Deployment
     const token = await MyERC20.connect(owner).deploy(NAME, SYMBOL, DECIMALS, TOTAL_SUPPLY);
     const saveTokenContract = await SaveToken.connect(owner).deploy(await token.getAddress());
     const schoolContract = await SchoolManagementSystem.connect(owner).deploy(await token.getAddress());
+    const propertyContract = await PropertyManagementSystem.connect(owner).deploy(await token.getAddress());
 
-    return { token, saveTokenContract, schoolContract, owner, otherAccount, NAME, SYMBOL, DECIMALS, TOTAL_SUPPLY };
+    return { token, saveTokenContract, schoolContract, propertyContract, owner, otherAccount, NAME, SYMBOL, DECIMALS, TOTAL_SUPPLY };
   }
 
   describe("MyERC20", function() {
@@ -217,7 +220,7 @@ describe("All Tests", function () {
     });
   });
 
-  describe("School Management System Tests", async function () {
+  describe("School Management System Tests", function () {
     it("Should check if the token and owner addresses are correctly set", async function () {
       const { saveTokenContract, schoolContract, token, owner } = await loadFixture(deployContracts);
 
@@ -362,6 +365,27 @@ describe("All Tests", function () {
       // Check balance of staff to be equal to his salary
       expect(await token.balanceOf(staff1.address)).to.be.equals((await schoolContract.getStaffDetail(staff1.address)).salary);
       expect(await token.balanceOf(staff2.address)).to.equals((await schoolContract.getStaffDetail(staff2.address)).salary);
+    });
+  });
+
+  describe("Property Management Tests", function() {
+    it("Ensures token address is set properly", async function() {
+      const { propertyContract, token } = await loadFixture(deployContracts);
+      expect(await propertyContract.getTokenAddress()).to.be.equals(await token.getAddress());
+    });
+
+    it("Lists a new property and emits Event", async function() {
+      const {propertyContract, token, owner} = await loadFixture(deployContracts);
+
+      const name = "Property";
+      const price = ethers.parseEther("1");
+
+      // Approve Contract
+      await token.connect(owner).approve(await propertyContract.getAddress(), propertyContract.PROPERTY_LISTING_PRICE);
+
+      // List
+      expect(await propertyContract.connect(owner).listNewProperty(name, price)).to.emit(propertyContract, "PropertyListed");
+      expect((await propertyContract.getAllProperties())[0].name).to.be.equals(name);
     });
   });
 });
