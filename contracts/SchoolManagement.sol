@@ -138,9 +138,7 @@ contract SchoolManagementSystem {
         address studentAddress
     ) public view returns (Student memory) {
         return
-            studentDetailFromAddress[
-                studentAddress == address(0) ? msg.sender : studentAddress
-            ];
+            studentDetailFromAddress[studentAddress];
     }
 
     function getStaffDetail(

@@ -229,7 +229,42 @@ describe("All Tests", function () {
     });
 
     it("Can register student", async function() {
+      const { schoolContract, owner, token } = await loadFixture(deployContracts);
 
+      const name = "Name";
+      const age = 12n;
+      const grade = 0n;
+      const fee = await schoolContract.getStkPriceForGrade(grade);
+
+      // Check Balance
+      if (await token.balanceOf(owner.address) < fee) {
+        await token.connect(owner).buyToken({value: ethers.parseEther("1")});
+      }
+
+      // Give Allowance
+      await token.connect(owner).approve(await schoolContract.getAddress(), fee);
+
+      // Register
+      await schoolContract.connect(owner).registerStudent(name, age, grade);
+
+      expect((await schoolContract.getStudentDetail(owner.address)).name).to.equals(name);
+      expect((await schoolContract.getStudentDetail(owner.address)).age).to.equals(age);
+      expect((await schoolContract.getStudentDetail(owner.address)).grade).to.equals(grade);
+      expect((await schoolContract.getStudentDetail(owner.address)).suspended).to.equals(false);
     });
+
+    it("Can register staff", async function() {
+      const { schoolContract, owner } = await loadFixture(deployContracts);
+
+
+      const name = "Staff";
+      const age = 12n;
+
+      await schoolContract.registerStaff(name, age);
+      expect((await schoolContract.getStaffDetail(owner.address)).name).to.equals(name);
+      expect((await schoolContract.getStaffDetail(owner.address)).age).to.equals(age);
+    });
+
+    // it("")
   });
 });
