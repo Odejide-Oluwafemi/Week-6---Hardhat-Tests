@@ -223,6 +223,10 @@ contract SchoolManagementSystem {
         return address(token);
     }
 
+    function getOwner() external view returns(address) {
+        return owner;
+    }
+
     /*
         Create a School management system where people can:
 

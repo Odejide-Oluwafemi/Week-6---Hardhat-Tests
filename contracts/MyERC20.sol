@@ -126,6 +126,10 @@ contract MyERC20 is IMyERC20 {
         return NAME;
     }
 
+    function symbol() external view returns (string memory) {
+        return SYMBOL;
+    }
+
     function decimals() external view override returns (uint256) {
         return DECIMALS;
     }
