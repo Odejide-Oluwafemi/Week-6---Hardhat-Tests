@@ -5,7 +5,8 @@ import hre, { ethers } from "hardhat";
 
 describe("All Tests", function () {
   async function deployContracts() {
-    const [owner, otherAccount] = await hre.ethers.getSigners();
+    const [owner, otherAccount, account3, account4] =
+      await hre.ethers.getSigners();
 
     const MyERC20 = await hre.ethers.getContractFactory("MyERC20");
     const SaveToken = await hre.ethers.getContractFactory("SaveToken");
@@ -15,6 +16,7 @@ describe("All Tests", function () {
     const PropertyManagementSystem = await hre.ethers.getContractFactory(
       "PropertyManagement",
     );
+    const MultiSigWallet = await ethers.getContractFactory("MultiSigWallet");
 
     const NAME = "My Token";
     const SYMBOL = "MTK";
@@ -37,14 +39,22 @@ describe("All Tests", function () {
     const propertyContract = await PropertyManagementSystem.connect(
       owner,
     ).deploy(await token.getAddress());
+    const multiSigContract = await MultiSigWallet.deploy(
+      owner.address,
+      otherAccount.address,
+      account3.address,
+    );
 
     return {
       token,
       saveTokenContract,
       schoolContract,
       propertyContract,
+      multiSigContract,
       owner,
       otherAccount,
+      account3,
+      account4,
       NAME,
       SYMBOL,
       DECIMALS,
@@ -631,7 +641,7 @@ describe("All Tests", function () {
       await token
         .connect(otherAccount)
         .buyToken({ value: ethers.parseEther("2") });
-      
+
       await token
         .connect(otherAccount)
         .approve(await propertyContract.getAddress(), listingPrice * 2n);
@@ -640,12 +650,26 @@ describe("All Tests", function () {
       await expect(
         propertyContract
           .connect(otherAccount)
-          .buyProperty((await propertyContract.getAllProperties())[0].id + 1n))
-      .to.be.revertedWithCustomError(propertyContract, "Property__ThisPropertyIsNotListedForSale");
+          .buyProperty((await propertyContract.getAllProperties())[0].id + 1n),
+      ).to.be.revertedWithCustomError(
+        propertyContract,
+        "Property__ThisPropertyIsNotListedForSale",
+      );
 
       expect((await propertyContract.getAllProperties())[0].owner).to.be.equals(
         owner.address,
       );
+    });
+  });
+
+  describe("MultiSig Wallet Tests", () => {
+    it("Sets Signer Addresses", async function () {
+      const { multiSigContract, owner, otherAccount, account3 } =
+        await loadFixture(deployContracts);
+
+      expect(await multiSigContract.signers(0)).to.equals(owner);
+      expect(await multiSigContract.signers(1)).to.equals(otherAccount);
+      expect(await multiSigContract.signers(2)).to.equals(account3);
     });
   });
 });

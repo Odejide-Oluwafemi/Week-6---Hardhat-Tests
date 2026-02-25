@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.34;
+pragma solidity ^0.8.3;
 
 contract MultiSigWallet {
 //   =====================================================================================
@@ -94,10 +94,20 @@ contract MultiSigWallet {
     function withdraw(uint amount) external onlyValidSigner onlyWhenApproved {
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Withdraw Failed");
+
+        resetApprovalsAfterTransaction();
     }
 
     function approve(bool isApproving) external onlyValidSigner {
         signerToHasSigned[msg.sender] = isApproving;
+    }
+
+    function resetApprovalsAfterTransaction() private {
+      for (uint i; i < signers.length; i++) {
+        signerToHasSigned[signers[i]] = false;
+        signerToHasSigned[signers[i]] = false;
+        signerToHasSigned[signers[i]] = false;
+      }
     }
 
     // External Functions
