@@ -740,7 +740,7 @@ describe("All Tests", function () {
       ).to.be.equals(isApproving);
     });
 
-    it("Only withdraws when approval is enough", async function () {
+    it("Only withdraws when approval is enough and resets approvals to false", async function () {
       // Create Product
       const { multiSigContract, owner, otherAccount, account3, account4 } = await loadFixture(deployContracts);
 
@@ -765,6 +765,33 @@ describe("All Tests", function () {
       expect(await multiSigContract.connect(owner).withdraw(await ethers.provider.getBalance(await multiSigContract.getAddress()))).to.changeEtherBalances([owner, multiSigContract], [
         COST, -COST
       ]);
+
+      expect(await multiSigContract.signerToHasSigned(owner.address)).to.equals(false);
+      expect(await multiSigContract.signerToHasSigned(otherAccount.address)).to.equals(false);
+      expect(await multiSigContract.signerToHasSigned(account3.address)).to.equals(false);
+    });
+
+    it("Fails withdraw when not enough approvals have been granted", async function () {
+      // Create Product
+      const { multiSigContract, owner, otherAccount, account3, account4 } = await loadFixture(deployContracts);
+
+      const NAME = "Product 1";
+      const COST = ethers.parseEther("1");
+
+      await multiSigContract.connect(owner).createProduct(NAME, COST);
+
+      // User buys product to fund contract
+      await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+      expect(await multiSigContract.getAllProductLength()).to.equal(0);
+      expect(
+        await ethers.provider.getBalance(await multiSigContract.getAddress()),
+      ).to.be.equals(COST);
+
+      // Insufficient Signer approve
+      await multiSigContract.connect(account3).approve(true);
+
+      // Successful Withdrawal
+      await expect(multiSigContract.connect(owner).withdraw(await ethers.provider.getBalance(await multiSigContract.getAddress()))).to.be.revertedWithCustomError(multiSigContract, "NeedsMoreApproval");
     });
   });
 });
