@@ -28,7 +28,7 @@ contract MultiSigWallet {
     // State Variables
     address[] public signers;
     mapping (address signer => bool hasSigned) public signerToHasSigned;
-    Product[] private allProducts;
+    Product[] public allProducts;
 
     constructor(address _signer1, address _signer2, address _signer3) {
         require(((_signer1 != _signer2) && ( _signer2 != _signer3) && (_signer1 != _signer3)), "Duplicate Signer Addresses Found!!!");
@@ -113,6 +113,10 @@ contract MultiSigWallet {
     // External Functions
     function getProductDetails(uint index) external  view  returns (Product memory) {
         return allProducts[index];
+    }
+
+    function getAllProductLength() external view returns (uint) {
+        return allProducts.length;
     }
 }
 

@@ -672,28 +672,99 @@ describe("All Tests", function () {
       expect(await multiSigContract.signers(2)).to.equals(account3);
     });
 
-    it("Allows only Signers to Create a Product", async function() {
-      const { multiSigContract, account4 } =
-        await loadFixture(deployContracts);
-    
+    it("Allows only Signers to Create a Product", async function () {
+      const { multiSigContract, account4 } = await loadFixture(deployContracts);
+
       const NAME = "Product 1";
       const COST = ethers.parseEther("1");
 
-      await expect(multiSigContract.connect(account4).createProduct(NAME, COST)).to.be.revertedWithCustomError(
-        multiSigContract, "OnlySignersCanInitiateThisTransaction");
+      await expect(
+        multiSigContract.connect(account4).createProduct(NAME, COST),
+      ).to.be.revertedWithCustomError(
+        multiSigContract,
+        "OnlySignersCanInitiateThisTransaction",
+      );
     });
 
-    it("Create a Product by a valid Signer", async function() {
-       const { multiSigContract, owner } =
-        await loadFixture(deployContracts);
-    
-        const NAME = "Product 1";
-        const COST = ethers.parseEther("1");
-        
-        await multiSigContract.connect(owner).createProduct(NAME, COST);
+    it("Create a Product by a valid Signer", async function () {
+      const { multiSigContract, owner } = await loadFixture(deployContracts);
 
-        expect((await multiSigContract.getProductDetails(0n)).name).to.equals(NAME);
-        expect((await multiSigContract.getProductDetails(0n)).cost).to.equals(COST);
+      const NAME = "Product 1";
+      const COST = ethers.parseEther("1");
+
+      await multiSigContract.connect(owner).createProduct(NAME, COST);
+
+      expect((await multiSigContract.getProductDetails(0n)).name).to.equals(
+        NAME,
+      );
+      expect((await multiSigContract.getProductDetails(0n)).cost).to.equals(
+        COST,
+      );
+    });
+
+    it("Allows Users to purchase product", async function () {
+      // Create Product
+      const { multiSigContract, owner, account4 } = await loadFixture(deployContracts);
+
+      const NAME = "Product 1";
+      const COST = ethers.parseEther("1");
+
+      await multiSigContract.connect(owner).createProduct(NAME, COST);
+
+      // Buy Product
+      await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+      expect(await multiSigContract.getAllProductLength()).to.equal(0);
+      expect(
+        await ethers.provider.getBalance(await multiSigContract.getAddress()),
+      ).to.be.equals(COST);
+    });
+
+    it("Allows a Signer to toggle his approval status", async function () {
+      const { multiSigContract, owner } = await loadFixture(deployContracts);
+
+      // Ensure it starts off as false
+      expect(
+        await multiSigContract.signerToHasSigned(owner.address),
+      ).to.be.equals(false);
+
+      let isApproving = true;
+      await multiSigContract.connect(owner).approve(isApproving);
+      expect(
+        await multiSigContract.signerToHasSigned(owner.address),
+      ).to.be.equals(isApproving);
+
+      isApproving = false;
+      await multiSigContract.connect(owner).approve(isApproving);
+      expect(
+        await multiSigContract.signerToHasSigned(owner.address),
+      ).to.be.equals(isApproving);
+    });
+
+    it("Only withdraws when approval is enough", async function () {
+      // Create Product
+      const { multiSigContract, owner, otherAccount, account3, account4 } = await loadFixture(deployContracts);
+
+      const NAME = "Product 1";
+      const COST = ethers.parseEther("1");
+
+      await multiSigContract.connect(owner).createProduct(NAME, COST);
+
+      // User buys product to fund contract
+      await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+      expect(await multiSigContract.getAllProductLength()).to.equal(0);
+      expect(
+        await ethers.provider.getBalance(await multiSigContract.getAddress()),
+      ).to.be.equals(COST);
+
+      // Signers approve
+      await multiSigContract.connect(owner).approve(true);
+      await multiSigContract.connect(otherAccount).approve(true);
+      await multiSigContract.connect(account3).approve(true);
+
+      // Successful Withdrawal
+      expect(await multiSigContract.connect(owner).withdraw(await ethers.provider.getBalance(await multiSigContract.getAddress()))).to.changeEtherBalances([owner, multiSigContract], [
+        COST, -COST
+      ]);
     });
   });
 });
