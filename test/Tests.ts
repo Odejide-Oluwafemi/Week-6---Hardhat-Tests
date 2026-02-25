@@ -256,15 +256,54 @@ describe("All Tests", function () {
     it("Can register staff", async function() {
       const { schoolContract, owner } = await loadFixture(deployContracts);
 
-
       const name = "Staff";
       const age = 12n;
 
       await schoolContract.registerStaff(name, age);
+
       expect((await schoolContract.getStaffDetail(owner.address)).name).to.equals(name);
       expect((await schoolContract.getStaffDetail(owner.address)).age).to.equals(age);
     });
 
-    // it("")
+    it("Pays a single staff and emits Event", async function() {
+      const { schoolContract, owner, otherAccount, token} = await loadFixture(deployContracts);
+
+      // Register a student first so we'll have money to pay staff
+      const grade = 0n;
+      const fee = await schoolContract.getStkPriceForGrade(grade);
+      
+      // Check Balance
+      if (await token.balanceOf(owner.address) < fee) {
+        await token.connect(owner).buyToken({value: ethers.parseEther("1")});
+      }
+
+      // Give Allowance
+      await token.connect(owner).approve(await schoolContract.getAddress(), fee);
+
+      // Register Student
+      await schoolContract.connect(owner).registerStudent("name", 12n, grade);
+
+      // Register Staff
+      await schoolContract.connect(otherAccount).registerStaff("Name", 12n);
+
+      // Pay Staff and Expect to Emit Event
+      expect(await schoolContract.connect(owner).payStaff(0n)).to.emit(schoolContract, "StaffPaid").withArgs(
+        await schoolContract.getStaffDetail(otherAccount.address)
+      );
+
+      // Check balance of staff to be equal to his salary
+      expect(await token.balanceOf(otherAccount.address)).to.equals((await schoolContract.getStaffDetail(otherAccount.address)).salary);
+    });
+
+    it("Suspends Staff and emits Event", async function() {
+      const {owner, otherAccount, schoolContract} = await loadFixture(deployContracts);
+      await schoolContract.connect(otherAccount).registerStaff("Name", 12n);
+
+      expect(await schoolContract.suspendStaff(otherAccount.address)).to.emit(schoolContract, "StaffSuspended").withArgs(
+        await schoolContract.getStaffDetail(otherAccount.address)
+      )
+
+      expect((await schoolContract.getStaffDetail(otherAccount.address)).suspended).to.be.equals(true);
+    });
   });
 });
