@@ -305,5 +305,63 @@ describe("All Tests", function () {
 
       expect((await schoolContract.getStaffDetail(otherAccount.address)).suspended).to.be.equals(true);
     });
+
+    it("Suspends Student and emits Event", async function() {
+      const { schoolContract, owner, token } = await loadFixture(deployContracts);
+
+      // Register Student First
+      const name = "Name";
+      const age = 12n;
+      const grade = 0n;
+      const fee = await schoolContract.getStkPriceForGrade(grade);
+
+      // Check Balance
+      if (await token.balanceOf(owner.address) < fee) {
+        await token.connect(owner).buyToken({value: ethers.parseEther("1")});
+      }
+
+      // Give Allowance
+      await token.connect(owner).approve(await schoolContract.getAddress(), fee);
+
+      // Register
+      await schoolContract.connect(owner).registerStudent(name, age, grade);
+
+      // Suspend
+      expect(await schoolContract.suspendStudent(owner.address)).to.emit(schoolContract, "StudentSuspended").withArgs(
+        await schoolContract.getStudentDetail(owner.address)
+      );
+    });
+
+    it("Pays all staffs", async function() {
+      const { schoolContract, owner, otherAccount, token} = await loadFixture(deployContracts);
+
+      // Register a student first so we'll have money to pay staff
+      const grade = 3n;
+      const fee = await schoolContract.getStkPriceForGrade(grade);
+      
+      // Check Balance
+      if (await token.balanceOf(owner.address) < fee) {
+        await token.connect(owner).buyToken({value: ethers.parseEther("2")});
+      }
+
+      // Give Allowance
+      await token.connect(owner).approve(await schoolContract.getAddress(), fee);
+
+      // Register Student
+      await schoolContract.connect(owner).registerStudent("name", 12n, grade);
+      // Register Staffs
+      const staff1 = otherAccount;
+      const [,,staff2] = await hre.ethers.getSigners();
+
+      await schoolContract.connect(staff1).registerStaff("Name", 12n);
+      await schoolContract.connect(staff2).registerStaff("Name2", 16n);
+
+      // Pay Staff and Expect to Emit Event
+      await schoolContract.connect(owner).payAllStaffs();
+
+      // Check balance of staff to be equal to his salary
+      expect(await token.balanceOf(staff1.address)).to.be.equals((await schoolContract.getStaffDetail(staff1.address)).salary);
+      expect(await token.balanceOf(staff2.address)).to.equals((await schoolContract.getStaffDetail(staff2.address)).salary);
+    });
   });
 });
