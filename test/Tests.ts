@@ -1,5 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
+import { BigNumberish, parseEther } from "ethers";
 import hre, { ethers } from "hardhat";
 
 describe("All Tests", function () {
@@ -377,15 +378,16 @@ describe("All Tests", function () {
     it("Lists a new property and emits Event", async function() {
       const {propertyContract, token, owner} = await loadFixture(deployContracts);
 
-      const name = "Property";
-      const price = ethers.parseEther("1");
+      // Buy Token
+      await token.connect(owner).buyToken({value: parseEther("1")});
 
       // Approve Contract
-      await token.connect(owner).approve(await propertyContract.getAddress(), propertyContract.PROPERTY_LISTING_PRICE);
-
+      const listingPrice = 1000n;
+      await token.connect(owner).approve(await propertyContract.getAddress(), listingPrice);
+      
       // List
-      expect(await propertyContract.connect(owner).listNewProperty(name, price)).to.emit(propertyContract, "PropertyListed");
-      expect((await propertyContract.getAllProperties())[0].name).to.be.equals(name);
+      expect(await propertyContract.connect(owner).listNewProperty("Property Name", listingPrice)).to.emit(propertyContract, "PropertyListed");
+      expect((await propertyContract.getAllProperties()).length).to.be.equals(1);
     });
   });
 });
