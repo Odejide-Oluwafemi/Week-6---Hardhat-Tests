@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.3;
 
-import {IMyERC20} from "contracts/IMyERC20.sol";
+import {IMyERC20} from "contracts/Week 5/IMyERC20.sol";
 
 contract MyERC20 is IMyERC20 {
     // Errors

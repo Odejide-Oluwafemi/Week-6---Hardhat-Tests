@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.3;
 
-import {MyERC20} from "contracts/MyERC20.sol";
+import {MyERC20} from "contracts/Week 5/MyERC20.sol";
 
 contract SchoolManagementSystem {
     /*

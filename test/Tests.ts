@@ -671,5 +671,29 @@ describe("All Tests", function () {
       expect(await multiSigContract.signers(1)).to.equals(otherAccount);
       expect(await multiSigContract.signers(2)).to.equals(account3);
     });
+
+    it("Allows only Signers to Create a Product", async function() {
+      const { multiSigContract, account4 } =
+        await loadFixture(deployContracts);
+    
+      const NAME = "Product 1";
+      const COST = ethers.parseEther("1");
+
+      await expect(multiSigContract.connect(account4).createProduct(NAME, COST)).to.be.revertedWithCustomError(
+        multiSigContract, "OnlySignersCanInitiateThisTransaction");
+    });
+
+    it("Create a Product by a valid Signer", async function() {
+       const { multiSigContract, owner } =
+        await loadFixture(deployContracts);
+    
+        const NAME = "Product 1";
+        const COST = ethers.parseEther("1");
+        
+        await multiSigContract.connect(owner).createProduct(NAME, COST);
+
+        expect((await multiSigContract.getProductDetails(0n)).name).to.equals(NAME);
+        expect((await multiSigContract.getProductDetails(0n)).cost).to.equals(COST);
+    });
   });
 });
