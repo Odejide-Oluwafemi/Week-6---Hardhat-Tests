@@ -1,6 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-toolbox/network-helpers";
 import { expect } from "chai";
-import { BigNumberish, parseEther } from "ethers";
+import { parseEther } from "ethers";
 import hre, { ethers } from "hardhat";
 
 describe("All Tests", function () {
@@ -713,6 +713,7 @@ describe("All Tests", function () {
 
       // Buy Product
       await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+
       expect(await multiSigContract.getAllProductLength()).to.equal(0);
       expect(
         await ethers.provider.getBalance(await multiSigContract.getAddress()),
@@ -762,8 +763,10 @@ describe("All Tests", function () {
       await multiSigContract.connect(account3).approve(true);
 
       // Successful Withdrawal
-      expect(await multiSigContract.connect(owner).withdraw(await ethers.provider.getBalance(await multiSigContract.getAddress()))).to.changeEtherBalances([owner, multiSigContract], [
-        COST, -COST
+      const amountToWithdraw = await ethers.provider.getBalance(await multiSigContract.getAddress());
+
+      expect(await multiSigContract.connect(owner).withdraw(amountToWithdraw)).to.changeEtherBalances([owner, multiSigContract], [
+        amountToWithdraw, -amountToWithdraw
       ]);
 
       expect(await multiSigContract.signerToHasSigned(owner.address)).to.equals(false);

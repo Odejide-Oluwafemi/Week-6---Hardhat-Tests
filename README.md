@@ -1,13 +1,2 @@
-# Sample Hardhat Project
-
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
-
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.ts
-```
+# NFT
+[0xCAB39e4D2448Ace36626B897C6e9759a9f34f8a5](https://testnet.routescan.io/address/0xCAB39e4D2448Ace36626B897C6e9759a9f34f8a5/contract/11155111/code)
