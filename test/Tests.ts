@@ -22,6 +22,7 @@ describe("All Tests", function () {
     const SYMBOL = "MTK";
     const DECIMALS = 18;
     const TOTAL_SUPPLY = 100000000000000000000000000n;
+    const APPROVAL_COUNT = 2;
 
     // Deployment
     const token = await MyERC20.connect(owner).deploy(
@@ -43,6 +44,7 @@ describe("All Tests", function () {
       owner.address,
       otherAccount.address,
       account3.address,
+      APPROVAL_COUNT
     );
 
     return {
@@ -712,7 +714,8 @@ describe("All Tests", function () {
       await multiSigContract.connect(owner).createProduct(NAME, COST);
 
       // Buy Product
-      await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+      const ID = (await multiSigContract.getProductDetails(0)).id;
+      await multiSigContract.connect(account4).buyProduct(ID, { value: COST });
 
       expect(await multiSigContract.getAllProductLength()).to.equal(0);
       expect(
@@ -721,7 +724,7 @@ describe("All Tests", function () {
     });
 
     it("Allows a Signer to toggle his approval status", async function () {
-      const { multiSigContract, owner } = await loadFixture(deployContracts);
+      const { multiSigContract, owner, otherAccount } = await loadFixture(deployContracts);
 
       // Ensure it starts off as false
       expect(
@@ -729,13 +732,16 @@ describe("All Tests", function () {
       ).to.be.equals(false);
 
       let isApproving = true;
-      await multiSigContract.connect(owner).approve(isApproving);
+      const signerRequesting = otherAccount.address;
+      const amountRequested = ethers.parseEther("1");
+
+      await multiSigContract.connect(owner).approve(signerRequesting, isApproving, amountRequested);
       expect(
         await multiSigContract.signerToHasSigned(owner.address),
       ).to.be.equals(isApproving);
 
       isApproving = false;
-      await multiSigContract.connect(owner).approve(isApproving);
+      await multiSigContract.connect(owner).approve(signerRequesting, isApproving, amountRequested);
       expect(
         await multiSigContract.signerToHasSigned(owner.address),
       ).to.be.equals(isApproving);
@@ -751,20 +757,22 @@ describe("All Tests", function () {
       await multiSigContract.connect(owner).createProduct(NAME, COST);
 
       // User buys product to fund contract
-      await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+      const ID = (await multiSigContract.getProductDetails(0)).id;
+      await multiSigContract.connect(account4).buyProduct(ID, { value: COST });
       expect(await multiSigContract.getAllProductLength()).to.equal(0);
       expect(
         await ethers.provider.getBalance(await multiSigContract.getAddress()),
       ).to.be.equals(COST);
 
       // Signers approve
-      await multiSigContract.connect(owner).approve(true);
-      await multiSigContract.connect(otherAccount).approve(true);
-      await multiSigContract.connect(account3).approve(true);
+      const amountToWithdraw = await ethers.provider.getBalance(await multiSigContract.getAddress());
+      let isApproving = true;
+      const signerRequesting = owner.address;
+
+      await multiSigContract.connect(otherAccount).approve(signerRequesting, isApproving, amountToWithdraw);
+      await multiSigContract.connect(account3).approve(signerRequesting, isApproving, amountToWithdraw);
 
       // Successful Withdrawal
-      const amountToWithdraw = await ethers.provider.getBalance(await multiSigContract.getAddress());
-
       expect(await multiSigContract.connect(owner).withdraw(amountToWithdraw)).to.changeEtherBalances([owner, multiSigContract], [
         amountToWithdraw, -amountToWithdraw
       ]);
@@ -783,15 +791,21 @@ describe("All Tests", function () {
 
       await multiSigContract.connect(owner).createProduct(NAME, COST);
 
+      const ID = (await multiSigContract.getProductDetails(0)).id;
+
       // User buys product to fund contract
-      await multiSigContract.connect(account4).buyProduct(NAME, { value: COST });
+      await multiSigContract.connect(account4).buyProduct(ID, { value: COST });
       expect(await multiSigContract.getAllProductLength()).to.equal(0);
       expect(
         await ethers.provider.getBalance(await multiSigContract.getAddress()),
       ).to.be.equals(COST);
 
       // Insufficient Signer approve
-      await multiSigContract.connect(account3).approve(true);
+      let isApproving = true;
+      const signerRequesting = owner.address;
+      const amountRequested = ethers.parseEther("1");
+
+      await multiSigContract.connect(account3).approve(signerRequesting, isApproving, amountRequested);
 
       // Successful Withdrawal
       await expect(multiSigContract.connect(owner).withdraw(await ethers.provider.getBalance(await multiSigContract.getAddress()))).to.be.revertedWithCustomError(multiSigContract, "NeedsMoreApproval");
