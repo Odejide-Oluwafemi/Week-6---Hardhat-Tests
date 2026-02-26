@@ -22,6 +22,16 @@ contract MultiSigWallet {
     error InvalidProductId();
     error ProductAlreadyExists();
 
+    // Events
+    event ContractDeployed(address[] indexed signers, uint numberOfApprovalNeeded);
+    event NumberOfApprovalNeededChanged(uint indexed numberOfApprovalNeeded, uint oldCount);
+    event ProductCreated(Product product);
+    event ProductPurchased(address buyer, Product productDetails);
+    event ApprovalRequestCreated(address bySigner, uint amountRequested);
+    event Withdrawal(address signer, uint amountWithdrawn);
+    event ApprovalSet(address indexed signer, address indexed signerRequesting, uint indexed amountToApprove, bool isApproving);
+    event ActionApprovalSet(address indexed signer, address indexed signerRequesting, Action action);
+
     // Enum
     enum Action {
         ChangeApproverCount,
@@ -60,6 +70,8 @@ contract MultiSigWallet {
         signers.push(_signer3);
 
         numberOfApprovalNeeded = _approvalCountNeeded;
+
+        emit ContractDeployed(signers, numberOfApprovalNeeded);
     }
 
     // Modifiers
@@ -110,9 +122,12 @@ contract MultiSigWallet {
     }
 
     function changeApproverCount(uint8 count) public onlyValidSigner onlyWhenActionApproved(msg.sender, Action.ChangeApproverCount) {
-        resetActionApproval(msg.sender, Action.ChangeApproverCount);
+        uint oldCount = numberOfApprovalNeeded;
 
+        resetActionApproval(msg.sender, Action.ChangeApproverCount);
         numberOfApprovalNeeded = count;
+
+        emit NumberOfApprovalNeededChanged(numberOfApprovalNeeded, oldCount);
     }
 
     function createProduct(string memory _name, uint _cost) public onlyValidSigner {
@@ -128,6 +143,8 @@ contract MultiSigWallet {
         allProducts.push(product);
         idToProductDetail[_id] = product;
         productNameToId[_name] = _id;
+
+        emit ProductCreated(product);
     }
 
     function buyProduct(uint _id) external payable {
@@ -152,10 +169,14 @@ contract MultiSigWallet {
             cost: 0
         });
         productNameToId[product.name] = 0;
+
+        emit ProductPurchased(msg.sender, product);
     }
 
     function createApprovalRequest(uint amount) external onlyValidSigner {
         amountRequestedBySigner[msg.sender] = amount;
+
+        emit ApprovalRequestCreated(msg.sender, amount);
     }
 
     function withdraw(uint amount) external onlyValidSigner onlyWhenApproved(msg.sender) {
@@ -163,6 +184,8 @@ contract MultiSigWallet {
 
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Withdraw Failed");
+
+        emit Withdrawal(msg.sender, amount);
     }
 
     function approve(address signerRequesting, bool isApproving, uint amountToApprove) external onlyValidSigner {
@@ -172,12 +195,16 @@ contract MultiSigWallet {
         signerToHasSigned[msg.sender] = isApproving;
         // signerToAmountApproved[msg.sender] = amountToApprove;
         amountApprovedToRequester[msg.sender][signerRequesting] = amountToApprove;
+
+        emit ApprovalSet(msg.sender, signerRequesting, amountToApprove, isApproving);
     }
 
     function approveActionTo(address signerRequesting, Action _action) external onlyValidSigner {
         require (signerRequesting != msg.sender, "Invalid Signer!");
 
         actionHasBeenApprovedToRequester[msg.sender][signerRequesting][_action] = true;
+
+        emit ActionApprovalSet(msg.sender, signerRequesting, _action);
     }
 
     function resetApprovalsAfterTransaction(address requester) private {
@@ -214,6 +241,7 @@ contract MultiSigWallet {
             }
         }
 
+    
     function isValidSigner(address signer) private view returns (bool) {
         bool valid;
 
@@ -243,3 +271,5 @@ contract MultiSigWallet {
 //   |  4. (2/3) signers must approve before a Withdrawal can be made                    |
 //   |                                                                                   |
 //   =====================================================================================
+
+// 0x5B38Da6a701c568545dCfcB03FcB875f56beddC4, 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2, 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db, 2
