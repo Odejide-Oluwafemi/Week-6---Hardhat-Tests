@@ -4,7 +4,7 @@ pragma solidity ^0.8.3;
 contract MultiSigWallet {
 //   =====================================================================================
 //   |                                                                                   |
-//   |  1. At Deployment, all Signers addresses will be provided                         |
+//   |  1. At Deployment, all 3 Signers addresses will be provided                         |
 //   |                                                                                   |
 //   |  2. Any signer can Create Product to be sold on the platform                      |
 //   |                                                                                   |
@@ -234,7 +234,7 @@ contract MultiSigWallet {
 
 //   =====================================================================================
 //   |                                                                                   |
-//   |  1. At Deployment, all Signers addresses will be provided                         |
+//   |  1. At Deployment, all 3 Signers addresses will be provided                         |
 //   |                                                                                   |
 //   |  2. Any signer can Create Product to be sold on the platform                      |
 //   |                                                                                   |
